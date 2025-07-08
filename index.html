@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PDF Text Extractor</title>
+  <!-- PDF.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.min.js"></script>
+  <!-- PDF.js worker (required) -->
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.worker.min.js';
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+    #output {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+      height: 400px;
+      overflow: auto;
+      background: #f9f9f9;
+    }
+    button {
+      margin: 5px;
+      padding: 5px 10px;
+    }
+    #navControls {
+      margin-top: 10px;
+    }
+    #pageIndicator {
+      margin: 0 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>PDF Text Extractor</h1>
+  <!-- File input and Go button -->
+  <input type="file" id="fileInput" accept="application/pdf">
+  <button id="goButton">Go</button>
+
+  <!-- Navigation controls -->
+  <div id="navControls">
+    <button id="prevButton" disabled>Previous</button>
+    <span id="pageIndicator"></span>
+    <button id="nextButton" disabled>Next</button>
+  </div>
+
+  <!-- Container for extracted text -->
+  <div id="output">PDF text will appear here...</div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const goButton = document.getElementById('goButton');
+    const prevButton = document.getElementById('prevButton');
+    const nextButton = document.getElementById('nextButton');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const output = document.getElementById('output');
+
+    let pagesText = [];
+    let currentPage = 1;
+
+    function updateNav() {
+      pageIndicator.textContent = `Page ${currentPage} / ${pagesText.length}`;
+      prevButton.disabled = currentPage <= 1;
+      nextButton.disabled = currentPage >= pagesText.length;
+      output.textContent = pagesText[currentPage - 1] || '';
+    }
+
+    prevButton.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        updateNav();
+      }
+    });
+
+    nextButton.addEventListener('click', () => {
+      if (currentPage < pagesText.length) {
+        currentPage++;
+        updateNav();
+      }
+    });
+
+    goButton.addEventListener('click', () => {
+      const file = fileInput.files[0];
+      if (!file) {
+        alert('Please select a PDF file first.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function() {
+        const typedarray = new Uint8Array(this.result);
+
+        pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+          const maxPages = pdf.numPages;
+          const pagePromises = [];
+
+          for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+            pagePromises.push(
+              pdf.getPage(pageNum).then(page => {
+                return page.getTextContent().then(textContent => {
+                  return textContent.items.map(item => item.str).join(' ');
+                });
+              })
+            );
+          }
+
+          Promise.all(pagePromises).then(pages => {
+            pagesText = pages;
+            currentPage = 1;
+            updateNav();
+          });
+        }).catch(err => {
+          console.error(err);
+          alert('Error reading PDF: ' + err.message);
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  </script>
+</body>
+</html>
