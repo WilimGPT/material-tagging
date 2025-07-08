@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>PDF Text Extractor</title>
+  <title>PDF Text Extractor with Per-Page OCR</title>
   <!-- PDF.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.min.js"></script>
-  <!-- PDF.js worker (required) -->
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.worker.min.js';
   </script>
+  <!-- Tesseract.js for OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -16,12 +17,18 @@
       max-width: 800px;
       margin: auto;
     }
+    #pdfViewer {
+      border: 1px solid #ccc;
+      margin-top: 20px;
+      width: 100%;
+      height: auto;
+    }
     #output {
       border: 1px solid #ccc;
       padding: 10px;
       margin-top: 20px;
       white-space: pre-wrap;
-      height: 400px;
+      height: 200px;
       overflow: auto;
       background: #f9f9f9;
     }
@@ -38,10 +45,11 @@
   </style>
 </head>
 <body>
-  <h1>PDF Text Extractor</h1>
-  <!-- File input and Go button -->
+  <h1>PDF Text Extractor with Per-Page OCR</h1>
+  <!-- File input and action buttons -->
   <input type="file" id="fileInput" accept="application/pdf">
   <button id="goButton">Go</button>
+  <button id="ocrButton" disabled>OCR Current Page</button>
 
   <!-- Navigation controls -->
   <div id="navControls">
@@ -50,78 +58,106 @@
     <button id="nextButton" disabled>Next</button>
   </div>
 
-  <!-- Container for extracted text -->
+  <!-- Canvas for rendering PDF page -->
+  <canvas id="pdfViewer"></canvas>
+
+  <!-- Container for extracted or OCR text -->
   <div id="output">PDF text will appear here...</div>
 
   <script>
     const fileInput = document.getElementById('fileInput');
     const goButton = document.getElementById('goButton');
+    const ocrButton = document.getElementById('ocrButton');
     const prevButton = document.getElementById('prevButton');
     const nextButton = document.getElementById('nextButton');
     const pageIndicator = document.getElementById('pageIndicator');
     const output = document.getElementById('output');
+    const canvas = document.getElementById('pdfViewer');
+    const ctx = canvas.getContext('2d');
 
+    let pdfDoc = null;
     let pagesText = [];
     let currentPage = 1;
+    const scale = 1.5;
 
+    // Render given pageNumber to canvas
+    function renderPage(pageNum) {
+      return pdfDoc.getPage(pageNum).then(page => {
+        const viewport = page.getViewport({ scale });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        return page.render({ canvasContext: ctx, viewport }).promise;
+      });
+    }
+
+    // Update navigation buttons, indicator and display text for current page
     function updateNav() {
       pageIndicator.textContent = `Page ${currentPage} / ${pagesText.length}`;
       prevButton.disabled = currentPage <= 1;
       nextButton.disabled = currentPage >= pagesText.length;
+      ocrButton.disabled = false;
       output.textContent = pagesText[currentPage - 1] || '';
+      renderPage(currentPage);
     }
 
-    prevButton.addEventListener('click', () => {
-      if (currentPage > 1) {
-        currentPage--;
-        updateNav();
-      }
-    });
-
-    nextButton.addEventListener('click', () => {
-      if (currentPage < pagesText.length) {
-        currentPage++;
-        updateNav();
-      }
-    });
-
-    goButton.addEventListener('click', () => {
+    // Load PDF and extract text for each page
+    async function loadPdf() {
       const file = fileInput.files[0];
       if (!file) {
         alert('Please select a PDF file first.');
         return;
       }
 
+      goButton.disabled = true;
+      output.textContent = 'Loading and extracting text...';
       const reader = new FileReader();
-      reader.onload = function() {
-        const typedarray = new Uint8Array(this.result);
+      reader.onload = async function() {
+        try {
+          const typedarray = new Uint8Array(this.result);
+          pdfDoc = await pdfjsLib.getDocument(typedarray).promise;
+          const maxPages = pdfDoc.numPages;
+          pagesText = [];
 
-        pdfjsLib.getDocument(typedarray).promise.then(pdf => {
-          const maxPages = pdf.numPages;
-          const pagePromises = [];
-
-          for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
-            pagePromises.push(
-              pdf.getPage(pageNum).then(page => {
-                return page.getTextContent().then(textContent => {
-                  return textContent.items.map(item => item.str).join(' ');
-                });
-              })
-            );
+          for (let i = 1; i <= maxPages; i++) {
+            const page = await pdfDoc.getPage(i);
+            const textContent = await page.getTextContent();
+            pagesText.push(textContent.items.map(item => item.str).join(' '));
           }
 
-          Promise.all(pagePromises).then(pages => {
-            pagesText = pages;
-            currentPage = 1;
-            updateNav();
-          });
-        }).catch(err => {
+          currentPage = 1;
+          updateNav();
+        } catch (err) {
           console.error(err);
-          alert('Error reading PDF: ' + err.message);
-        });
+          alert('Error processing PDF: ' + err.message);
+        } finally {
+          goButton.disabled = false;
+        }
       };
       reader.readAsArrayBuffer(file);
-    });
+    }
+
+    // Perform OCR on the current page and append to its text
+    async function ocrCurrentPage() {
+      ocrButton.disabled = true;
+      output.textContent = 'Performing OCR...';
+      try {
+        await renderPage(currentPage);
+        const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
+        pagesText[currentPage - 1] += '\n\n[OCR]\n' + text;
+        updateNav();
+      } catch (err) {
+        console.error(err);
+        alert('OCR error: ' + err.message);
+      } finally {
+        ocrButton.disabled = false;
+      }
+    }
+
+    // Event listeners
+    goButton.addEventListener('click', loadPdf);
+    ocrButton.addEventListener('click', ocrCurrentPage);
+    prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; updateNav(); }});
+    nextButton.addEventListener('click', () => { if (currentPage < pagesText.length) { currentPage++; updateNav(); }});
   </script>
 </body>
 </html>
