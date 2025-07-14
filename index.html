@@ -32,6 +32,15 @@
       overflow: auto;
       background: #f9f9f9;
     }
+    #ocrOutput {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 10px;
+      white-space: pre-wrap;
+      height: 200px;
+      overflow: auto;
+      background: #eef9ff;
+    }
     button {
       margin: 5px;
       padding: 5px 10px;
@@ -42,14 +51,42 @@
     #pageIndicator {
       margin: 0 10px;
     }
+    .tag-input {
+      border: 1px solid #ccc;
+      padding: 5px;
+      min-height: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .tag {
+      background: #e0e0e0;
+      border-radius: 3px;
+      padding: 2px 6px;
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.9em;
+    }
+    .tag .remove {
+      margin-left: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #tagControls input {
+      width: 100%;
+      padding: 4px;
+      box-sizing: border-box;
+      margin-top: 4px;
+    }
+
   </style>
 </head>
 <body>
   <h1>PDF Text Extractor with Per-Page OCR</h1>
+
   <!-- File input and action buttons -->
   <input type="file" id="fileInput" accept="application/pdf">
   <button id="goButton">Go</button>
-  <button id="ocrButton" disabled>OCR Current Page</button>
 
   <!-- Navigation controls -->
   <div id="navControls">
@@ -61,8 +98,24 @@
   <!-- Canvas for rendering PDF page -->
   <canvas id="pdfViewer"></canvas>
 
-  <!-- Container for extracted or OCR text -->
+  <!-- TAG CONTROLS -->
+  <div id="tagControls">
+    <div>
+      <label for="topicInput"><strong>Topics:</strong></label><br>
+      <div class="tag-input" id="topicTags"></div>
+      <input type="text" id="topicInput" placeholder="Add topic tag and press Enter">
+    </div>
+    <div style="margin-top:10px;">
+      <label for="vocabInput"><strong>Vocab:</strong></label><br>
+      <div class="tag-input" id="vocabTags"></div>
+      <input type="text" id="vocabInput" placeholder="Add vocab tag and press Enter">
+    </div>
+    <button id="copyToAll" style="margin-top:10px;">Copy to All</button>
+  </div>
+
+  <!-- Containers for extracted and OCR text -->
   <div id="output">PDF text will appear here...</div>
+  <div id="ocrOutput">OCR text will appear here...</div>
 
   <script>
     const fileInput = document.getElementById('fileInput');
@@ -77,6 +130,9 @@
 
     let pdfDoc = null;
     let pagesText = [];
+    let pagesOcrText = [];
+    let pagesTopicTags = [];
+    let pagesVocabTags = [];
     let currentPage = 1;
     const scale = 1.5;
 
@@ -95,9 +151,15 @@
       pageIndicator.textContent = `Page ${currentPage} / ${pagesText.length}`;
       prevButton.disabled = currentPage <= 1;
       nextButton.disabled = currentPage >= pagesText.length;
-      ocrButton.disabled = false;
+
       output.textContent = pagesText[currentPage - 1] || '';
+      document.getElementById('ocrOutput').textContent =
+        pagesOcrText[currentPage - 1] || '';
+
       renderPage(currentPage);
+
+      // render tags for this page:
+      renderTags();
     }
 
     // Load PDF and extract text for each page
@@ -117,11 +179,25 @@
           pdfDoc = await pdfjsLib.getDocument(typedarray).promise;
           const maxPages = pdfDoc.numPages;
           pagesText = [];
+          pagesOcrText = [];
+          pagesTopicTags = Array.from({ length: maxPages }, () => []);
+          pagesVocabTags = Array.from({ length: maxPages }, () => []);
 
           for (let i = 1; i <= maxPages; i++) {
             const page = await pdfDoc.getPage(i);
-            const textContent = await page.getTextContent();
-            pagesText.push(textContent.items.map(item => item.str).join(' '));
+            const tc = await page.getTextContent();
+            const scraped = tc.items.map(item => item.str).join(' ').trim();
+
+            let ocrText = '';
+            // auto‐OCR if scraped text is very sparse
+            if (scraped.split(/\s+/).filter(w => w).length < 10) {
+              await renderPage(i);
+              const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
+              ocrText = text;
+            }
+
+            pagesText.push(scraped);
+            pagesOcrText.push(ocrText);
           }
 
           currentPage = 1;
@@ -138,7 +214,6 @@
 
     // Perform OCR on the current page and append to its text
     async function ocrCurrentPage() {
-      ocrButton.disabled = true;
       output.textContent = 'Performing OCR...';
       try {
         await renderPage(currentPage);
@@ -150,15 +225,80 @@
         console.error(err);
         alert('OCR error: ' + err.message);
       } finally {
-        ocrButton.disabled = false;
       }
     }
 
+    function renderTags() {
+      const tContainer = document.getElementById('topicTags');
+      const vContainer = document.getElementById('vocabTags');
+      tContainer.innerHTML = '';
+      vContainer.innerHTML = '';
+
+      const idx = currentPage - 1;
+      pagesTopicTags[idx].forEach((tag, i) => {
+        const el = document.createElement('span');
+        el.className = 'tag';
+        el.textContent = tag;
+        const rem = document.createElement('span');
+        rem.className = 'remove';
+        rem.textContent = '×';
+        rem.onclick = () => {
+          pagesTopicTags[idx].splice(i, 1);
+          renderTags();
+        };
+        el.appendChild(rem);
+        tContainer.appendChild(el);
+      });
+      pagesVocabTags[idx].forEach((tag, i) => {
+        const el = document.createElement('span');
+        el.className = 'tag';
+        el.textContent = tag;
+        const rem = document.createElement('span');
+        rem.className = 'remove';
+        rem.textContent = '×';
+        rem.onclick = () => {
+          pagesVocabTags[idx].splice(i, 1);
+          renderTags();
+        };
+        el.appendChild(rem);
+        vContainer.appendChild(el);
+      });
+    }
+
+
     // Event listeners
     goButton.addEventListener('click', loadPdf);
-    ocrButton.addEventListener('click', ocrCurrentPage);
     prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; updateNav(); }});
     nextButton.addEventListener('click', () => { if (currentPage < pagesText.length) { currentPage++; updateNav(); }});
+    const topicInput = document.getElementById('topicInput');
+    const vocabInput = document.getElementById('vocabInput');
+    const copyBtn    = document.getElementById('copyToAll');
+
+    topicInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && topicInput.value.trim()) {
+        pagesTopicTags[currentPage - 1].push(topicInput.value.trim());
+        topicInput.value = '';
+        renderTags();
+      }
+    });
+    vocabInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && vocabInput.value.trim()) {
+        pagesVocabTags[currentPage - 1].push(vocabInput.value.trim());
+        vocabInput.value = '';
+        renderTags();
+      }
+    });
+
+    copyBtn.addEventListener('click', () => {
+      const idx = currentPage - 1;
+      const tCopy = [...pagesTopicTags[idx]];
+      const vCopy = [...pagesVocabTags[idx]];
+      pagesTopicTags = pagesTopicTags.map(() => [...tCopy]);
+      pagesVocabTags = pagesVocabTags.map(() => [...vCopy]);
+      renderTags();
+    });
+
+  
   </script>
 </body>
 </html>
