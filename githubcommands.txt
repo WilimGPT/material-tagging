@@ -1,4 +1,4 @@
 git add .
-git commit -m "helper text file added with terminal commands"
+git commit -m "xxx"
 git branch -M main
 git push origin main
