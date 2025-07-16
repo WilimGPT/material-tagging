@@ -1,0 +1,20 @@
+{
+  "filename": "file.pdf",
+  "text": [
+    {"page":1,
+    "scrapedText": "The text scraped from the file",
+    "OCR": "The OCR fallback (if any)"
+    },
+    {"page":2,
+    "scrapedText": "The text scraped from the file. Note that this page has no OCR, so no key there."
+    },
+    {"page":3,
+    "scrapedText": "The text scraped from the file",
+    "OCR": "The OCR fallback (if any)"
+    }
+  ],
+  "Tags": [
+    {"string": "past perfect","pages":[1,3,4,5]},
+    {"string": "vocab: banking","pages":[1,2]}
+  ]
+}
