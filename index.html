@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>PDF Text Extractor with Per-Page OCR</title>
+  <title>PDF Text Extractor with Per-Page OCR and Tagging</title>
   <!-- PDF.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.13.216/pdf.min.js"></script>
   <script>
@@ -11,6 +11,7 @@
   <!-- Tesseract.js for OCR -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <style>
+    /* === Basic Styles === */
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
@@ -51,6 +52,8 @@
     #pageIndicator {
       margin: 0 10px;
     }
+
+    /* === Tag UI Styles === */
     .tag-input {
       border: 1px solid #ccc;
       padding: 5px;
@@ -58,6 +61,8 @@
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
+      background: #fafafa;
+      margin-bottom: 2px;
     }
     .tag {
       background: #e0e0e0;
@@ -71,6 +76,8 @@
       margin-left: 4px;
       cursor: pointer;
       font-weight: bold;
+      color: #b11;
+      font-size: 1.1em;
     }
     #tagControls input {
       width: 100%;
@@ -78,227 +85,343 @@
       box-sizing: border-box;
       margin-top: 4px;
     }
-
+    /* === Suggestions Dropdown === */
+    .suggestions {
+      position: absolute;
+      background: #fff;
+      border: 1px solid #ccc;
+      list-style: none;
+      padding: 0;
+      margin: 2px 0 0 0;
+      max-height: 150px;
+      overflow-y: auto;
+      width: calc(100% - 12px);
+      z-index: 10;
+      display: none;
+    }
+    .suggestions li {
+      padding: 6px 8px;
+      cursor: pointer;
+    }
+    .suggestions li:hover {
+      background: #f0f0f0;
+    }
+    /* Required to position suggestions correctly */
+    #tagControls > div { position: relative; }
   </style>
 </head>
 <body>
-  <h1>PDF Text Extractor with Per-Page OCR</h1>
+  <h1>PDF Text Extractor with Per-Page OCR and Tagging</h1>
 
-  <!-- File input and action buttons -->
+  <!-- === PDF LOAD CONTROLS === -->
   <input type="file" id="fileInput" accept="application/pdf">
   <button id="goButton">Go</button>
 
-  <!-- Navigation controls -->
+  <!-- === PAGE NAVIGATION === -->
   <div id="navControls">
     <button id="prevButton" disabled>Previous</button>
     <span id="pageIndicator"></span>
     <button id="nextButton" disabled>Next</button>
   </div>
 
-  <!-- Canvas for rendering PDF page -->
+  <!-- === PDF VIEWER CANVAS === -->
   <canvas id="pdfViewer"></canvas>
 
-  <!-- TAG CONTROLS -->
+  <!-- === TAG CONTROLS === -->
   <div id="tagControls">
+    <!-- TOPIC TAGS -->
     <div>
       <label for="topicInput"><strong>Topics:</strong></label><br>
+      <!-- Where tags for this page appear -->
       <div class="tag-input" id="topicTags"></div>
-      <input type="text" id="topicInput" placeholder="Add topic tag and press Enter">
+      <!-- Tag input and suggestions dropdown -->
+      <input type="text" id="topicInput" autocomplete="off" placeholder="Add topic tag and press Enter">
+      <ul id="topicSuggestions" class="suggestions"></ul>
     </div>
+    <!-- VOCAB TAGS -->
     <div style="margin-top:10px;">
       <label for="vocabInput"><strong>Vocab:</strong></label><br>
+      <!-- Where tags for this page appear -->
       <div class="tag-input" id="vocabTags"></div>
-      <input type="text" id="vocabInput" placeholder="Add vocab tag and press Enter">
+      <!-- Tag input and suggestions -->
+      <input type="text" id="vocabInput" autocomplete="off" placeholder="Add vocab tag and press Enter">
+      <ul id="vocabSuggestions" class="suggestions"></ul>
     </div>
     <button id="copyToAll" style="margin-top:10px;">Copy to All</button>
   </div>
 
-  <!-- Containers for extracted and OCR text -->
+  <!-- === EXTRACTED TEXT AND OCR OUTPUT === -->
   <div id="output">PDF text will appear here...</div>
   <div id="ocrOutput">OCR text will appear here...</div>
 
   <script>
-    const fileInput = document.getElementById('fileInput');
-    const goButton = document.getElementById('goButton');
-    const ocrButton = document.getElementById('ocrButton');
-    const prevButton = document.getElementById('prevButton');
-    const nextButton = document.getElementById('nextButton');
-    const pageIndicator = document.getElementById('pageIndicator');
-    const output = document.getElementById('output');
-    const canvas = document.getElementById('pdfViewer');
-    const ctx = canvas.getContext('2d');
+  // ==========================
+  // == Global Data/Handles  ==
+  // ==========================
+  let pdfDoc = null;
+  let pagesText = [], pagesOcrText = [], pagesTopicTags = [], pagesVocabTags = [];
+  let currentPage = 1;
+  const scale = 1.5;
 
-    let pdfDoc = null;
-    let pagesText = [];
-    let pagesOcrText = [];
-    let pagesTopicTags = [];
-    let pagesVocabTags = [];
-    let currentPage = 1;
-    const scale = 1.5;
+  // Example tags & aliases
+  const allTags = [
+    { id: '1', category: 'predefined', string: 'past perfect' },
+    { id: '2', category: 'predefined', string: 'present continuous' },
+    { id: '3', category: 'predefined', string: 'subjunctive' },
+    { id: '4', category: 'vocab', string: 'banking' },
+    { id: '5', category: 'vocab', string: 'inflation' },
+    { id: '6', category: 'vocab', string: 'contract' }
+    // … add more as needed …
+  ];
+  const allAliases = [
+    { alias: 'present progressive', tag: 'present continuous' }
+    // … add more as needed …
+  ];
 
-    // Render given pageNumber to canvas
-    function renderPage(pageNum) {
-      return pdfDoc.getPage(pageNum).then(page => {
-        const viewport = page.getViewport({ scale });
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        return page.render({ canvasContext: ctx, viewport }).promise;
-      });
-    }
+  // DOM element handles
+  let fileInput, goButton, prevButton, nextButton, copyBtn;
+  let canvas, ctx, output, ocrOutput, pageIndicator;
+  let topicInput, vocabInput, topicSuggest, vocabSuggest;
 
-    // Update navigation buttons, indicator and display text for current page
-    function updateNav() {
-      pageIndicator.textContent = `Page ${currentPage} / ${pagesText.length}`;
-      prevButton.disabled = currentPage <= 1;
-      nextButton.disabled = currentPage >= pagesText.length;
+  // ==========================
+  // == Core PDF Functions   ==
+  // ==========================
+  function renderPage(pageNum) {
+    return pdfDoc.getPage(pageNum).then(page => {
+      const vp = page.getViewport({ scale });
+      canvas.width = vp.width;
+      canvas.height = vp.height;
+      return page.render({ canvasContext: ctx, viewport: vp }).promise;
+    });
+  }
 
-      output.textContent = pagesText[currentPage - 1] || '';
-      document.getElementById('ocrOutput').textContent =
-        pagesOcrText[currentPage - 1] || '';
+  function updateNav() {
+    pageIndicator.textContent = `Page ${currentPage} / ${pagesText.length}`;
+    prevButton.disabled = currentPage <= 1;
+    nextButton.disabled = currentPage >= pagesText.length;
 
-      renderPage(currentPage);
+    output.textContent = pagesText[currentPage - 1] || '';
+    ocrOutput.textContent = pagesOcrText[currentPage - 1] || '';
 
-      // render tags for this page:
-      renderTags();
-    }
+    renderPage(currentPage);
+    renderTags();
+  }
 
-    // Load PDF and extract text for each page
-    async function loadPdf() {
-      const file = fileInput.files[0];
-      if (!file) {
-        alert('Please select a PDF file first.');
-        return;
-      }
+  // Load & OCR a PDF, fill per-page arrays
+  async function loadPdf() {
+    const file = fileInput.files[0];
+    if (!file) return alert('Please select a PDF.');
 
-      goButton.disabled = true;
-      output.textContent = 'Loading and extracting text...';
-      const reader = new FileReader();
-      reader.onload = async function() {
-        try {
-          const typedarray = new Uint8Array(this.result);
-          pdfDoc = await pdfjsLib.getDocument(typedarray).promise;
-          const maxPages = pdfDoc.numPages;
-          pagesText = [];
-          pagesOcrText = [];
-          pagesTopicTags = Array.from({ length: maxPages }, () => []);
-          pagesVocabTags = Array.from({ length: maxPages }, () => []);
+    goButton.disabled = true;
+    output.textContent = 'Loading...';
 
-          for (let i = 1; i <= maxPages; i++) {
-            const page = await pdfDoc.getPage(i);
-            const tc = await page.getTextContent();
-            const scraped = tc.items.map(item => item.str).join(' ').trim();
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const data = new Uint8Array(reader.result);
+      pdfDoc = await pdfjsLib.getDocument(data).promise;
+      const maxPages = pdfDoc.numPages;
 
-            let ocrText = '';
-            // auto‐OCR if scraped text is very sparse
-            if (scraped.split(/\s+/).filter(w => w).length < 10) {
-              await renderPage(i);
-              const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
-              ocrText = text;
-            }
+      // Reinitialize per-page storage
+      pagesText = [];
+      pagesOcrText = [];
+      pagesTopicTags = Array.from({ length: maxPages }, () => []);
+      pagesVocabTags = Array.from({ length: maxPages }, () => []);
 
-            pagesText.push(scraped);
-            pagesOcrText.push(ocrText);
-          }
+      for (let i = 1; i <= maxPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const tc = await page.getTextContent();
+        const scraped = tc.items.map(it => it.str).join(' ').trim();
 
-          currentPage = 1;
-          updateNav();
-        } catch (err) {
-          console.error(err);
-          alert('Error processing PDF: ' + err.message);
-        } finally {
-          goButton.disabled = false;
+        let ocrText = '';
+        if (scraped.split(/\s+/).length < 10) {
+          await renderPage(i);
+          const res = await Tesseract.recognize(canvas, 'eng');
+          ocrText = res.data.text;
         }
-      };
-      reader.readAsArrayBuffer(file);
-    }
 
-    // Perform OCR on the current page and append to its text
-    async function ocrCurrentPage() {
-      output.textContent = 'Performing OCR...';
-      try {
-        await renderPage(currentPage);
-        const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
-        // Append only the OCR text without marker
-        pagesText[currentPage - 1] += '\n\n' + text;
-        updateNav();
-      } catch (err) {
-        console.error(err);
-        alert('OCR error: ' + err.message);
-      } finally {
+        pagesText.push(scraped);
+        pagesOcrText.push(ocrText);
       }
+
+      currentPage = 1;
+      updateNav();
+      goButton.disabled = false;
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ==============================
+  // ==== Tag UI/Logic Section ====
+  // ==============================
+
+  // Render tags for current page (does NOT touch suggestion <ul>s!)
+  function renderTags() {
+    const idx = currentPage - 1;
+    const topicTagsDiv = document.getElementById('topicTags');
+    const vocabTagsDiv = document.getElementById('vocabTags');
+    topicTagsDiv.innerHTML = '';
+    vocabTagsDiv.innerHTML = '';
+
+    // Render topic tags
+    pagesTopicTags[idx].forEach((t, i) => {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.textContent = t;
+      // Remove tag X
+      const x = document.createElement('span');
+      x.className = 'remove'; x.textContent = '×';
+      x.onclick = () => { pagesTopicTags[idx].splice(i, 1); renderTags(); };
+      span.appendChild(x);
+      topicTagsDiv.appendChild(span);
+    });
+
+    // Render vocab tags
+    pagesVocabTags[idx].forEach((v, i) => {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.textContent = v;
+      const x = document.createElement('span');
+      x.className = 'remove'; x.textContent = '×';
+      x.onclick = () => { pagesVocabTags[idx].splice(i, 1); renderTags(); };
+      span.appendChild(x);
+      vocabTagsDiv.appendChild(span);
+    });
+  }
+
+  // Suggestion helper
+  function getSuggestions(value, category) {
+    const q = value.trim().toLowerCase();
+    if (!q) return [];
+    const tagMatches = allTags
+      .filter(t => t.category === category && t.string.toLowerCase().startsWith(q))
+      .map(t => t.string);
+    const aliasMatches = allAliases
+      .filter(a => a.alias.toLowerCase().startsWith(q))
+      .map(a => a.tag);
+    return Array.from(new Set([...tagMatches, ...aliasMatches])).slice(0, 10);
+  }
+
+  // Display suggestions for the relevant input
+  function showSuggestions(which) {
+    const isTopic = which === 'topic';
+    const cat     = isTopic ? 'predefined' : 'vocab';
+    const input   = isTopic ? topicInput  : vocabInput;
+    const list    = isTopic ? topicSuggest : vocabSuggest;
+    const matches = getSuggestions(input.value, cat);
+
+    list.innerHTML = '';
+    matches.forEach(m => {
+      const li = document.createElement('li');
+      li.textContent = m;
+      list.appendChild(li);
+    });
+    list.style.display = matches.length ? 'block' : 'none';
+  }
+
+  // Add a tag to the appropriate page's array and update tags UI
+  function selectSuggestion(text, which) {
+    const idx = currentPage - 1;
+    if (which === 'topic') {
+      if (!pagesTopicTags[idx].includes(text)) // prevent duplicates
+        pagesTopicTags[idx].push(text);
+      topicInput.value = '';
+      topicSuggest.innerHTML = '';
+      topicSuggest.style.display = 'none';
+    } else {
+      if (!pagesVocabTags[idx].includes(text))
+        pagesVocabTags[idx].push(text);
+      vocabInput.value = '';
+      vocabSuggest.innerHTML = '';
+      vocabSuggest.style.display = 'none';
     }
+    renderTags();
+  }
 
-    function renderTags() {
-      const tContainer = document.getElementById('topicTags');
-      const vContainer = document.getElementById('vocabTags');
-      tContainer.innerHTML = '';
-      vContainer.innerHTML = '';
-
-      const idx = currentPage - 1;
-      pagesTopicTags[idx].forEach((tag, i) => {
-        const el = document.createElement('span');
-        el.className = 'tag';
-        el.textContent = tag;
-        const rem = document.createElement('span');
-        rem.className = 'remove';
-        rem.textContent = '×';
-        rem.onclick = () => {
-          pagesTopicTags[idx].splice(i, 1);
-          renderTags();
-        };
-        el.appendChild(rem);
-        tContainer.appendChild(el);
-      });
-      pagesVocabTags[idx].forEach((tag, i) => {
-        const el = document.createElement('span');
-        el.className = 'tag';
-        el.textContent = tag;
-        const rem = document.createElement('span');
-        rem.className = 'remove';
-        rem.textContent = '×';
-        rem.onclick = () => {
-          pagesVocabTags[idx].splice(i, 1);
-          renderTags();
-        };
-        el.appendChild(rem);
-        vContainer.appendChild(el);
-      });
+  // Respond to ENTER in topic field
+  function onTopicKeydown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = topicInput.value.trim();
+      if (!val) return;
+      // Use first suggestion if exists, else plain value
+      const suggestion = getSuggestions(val, 'predefined')[0] || val;
+      selectSuggestion(suggestion, 'topic');
     }
+  }
 
+  // Respond to ENTER in vocab field
+  function onVocabKeydown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = vocabInput.value.trim();
+      if (!val) return;
+      const suggestion = getSuggestions(val, 'vocab')[0] || val;
+      selectSuggestion(suggestion, 'vocab');
+    }
+  }
 
-    // Event listeners
+  // Copy tags from current page to all pages
+  function copyToAll() {
+    const idx = currentPage - 1;
+    const t = [...pagesTopicTags[idx]];
+    const v = [...pagesVocabTags[idx]];
+    pagesTopicTags = pagesTopicTags.map(() => [...t]);
+    pagesVocabTags = pagesVocabTags.map(() => [...v]);
+    renderTags();
+  }
+
+  // ==============================
+  // ====== Main Loop: Init =======
+  // ==============================
+  window.addEventListener('DOMContentLoaded', () => {
+    // --- Collect all elements ---
+    fileInput     = document.getElementById('fileInput');
+    goButton      = document.getElementById('goButton');
+    prevButton    = document.getElementById('prevButton');
+    nextButton    = document.getElementById('nextButton');
+    copyBtn       = document.getElementById('copyToAll');
+    canvas        = document.getElementById('pdfViewer');
+    ctx           = canvas.getContext('2d');
+    output        = document.getElementById('output');
+    ocrOutput     = document.getElementById('ocrOutput');
+    pageIndicator = document.getElementById('pageIndicator');
+    topicInput    = document.getElementById('topicInput');
+    vocabInput    = document.getElementById('vocabInput');
+    topicSuggest  = document.getElementById('topicSuggestions');
+    vocabSuggest  = document.getElementById('vocabSuggestions');
+
+    // --- Main PDF events ---
     goButton.addEventListener('click', loadPdf);
-    prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; updateNav(); }});
-    nextButton.addEventListener('click', () => { if (currentPage < pagesText.length) { currentPage++; updateNav(); }});
-    const topicInput = document.getElementById('topicInput');
-    const vocabInput = document.getElementById('vocabInput');
-    const copyBtn    = document.getElementById('copyToAll');
+    prevButton.addEventListener('click', () => { if(currentPage > 1) { currentPage--; updateNav(); } });
+    nextButton.addEventListener('click', () => { if(currentPage < pagesText.length) { currentPage++; updateNav(); } });
+    copyBtn.addEventListener('click', copyToAll);
 
-    topicInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && topicInput.value.trim()) {
-        pagesTopicTags[currentPage - 1].push(topicInput.value.trim());
-        topicInput.value = '';
-        renderTags();
+    // === Tag inputs: input, keydown, click suggestion
+    topicInput.addEventListener('input',  () => showSuggestions('topic'));
+    topicInput.addEventListener('keydown', onTopicKeydown);
+    vocabInput.addEventListener('input',  () => showSuggestions('vocab'));
+    vocabInput.addEventListener('keydown', onVocabKeydown);
+
+    // Hide suggestions when input loses focus (with delay for click)
+    topicInput.addEventListener('blur', () => setTimeout(() => topicSuggest.style.display = 'none', 120));
+    vocabInput.addEventListener('blur', () => setTimeout(() => vocabSuggest.style.display = 'none', 120));
+
+    // Suggestion list: click to select
+    topicSuggest.addEventListener('click', e => {
+      if (e.target.tagName === 'LI') {
+        selectSuggestion(e.target.textContent, 'topic');
       }
     });
-    vocabInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && vocabInput.value.trim()) {
-        pagesVocabTags[currentPage - 1].push(vocabInput.value.trim());
-        vocabInput.value = '';
-        renderTags();
+    vocabSuggest.addEventListener('click', e => {
+      if (e.target.tagName === 'LI') {
+        selectSuggestion(e.target.textContent, 'vocab');
       }
     });
 
-    copyBtn.addEventListener('click', () => {
-      const idx = currentPage - 1;
-      const tCopy = [...pagesTopicTags[idx]];
-      const vCopy = [...pagesVocabTags[idx]];
-      pagesTopicTags = pagesTopicTags.map(() => [...tCopy]);
-      pagesVocabTags = pagesVocabTags.map(() => [...vCopy]);
-      renderTags();
-    });
+    // ---- Initial rendering (tags blank) ---
+    renderTags();
+  });
 
-  
   </script>
 </body>
 </html>
