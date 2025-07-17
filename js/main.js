@@ -23,6 +23,68 @@
   let canvas, ctx, output, ocrOutput, pageIndicator;
   let topicInput, vocabInput, topicSuggest, vocabSuggest;
 
+
+
+  // --- Compose Export Object for this PDF/Tag job ---
+    function buildExportObject() {
+    // Get filename from file input
+    const fname = fileInput.files[0] ? fileInput.files[0].name : 'unknown.pdf';
+
+    // Build per-page text array (with optional OCR key)
+    const textArr = pagesText.map((scraped, idx) => {
+        const ob = { page: idx+1, scrapedText: scraped };
+        if (pagesOcrText[idx] && pagesOcrText[idx].trim()) {
+        ob.OCR = pagesOcrText[idx];
+        }
+        return ob;
+    });
+
+    // Build the tag occurrence map:
+    // key: tagString, value: Set of page numbers (1-based)
+    const tagMap = {};
+    pagesTopicTags.forEach((arr, idx) => {
+        arr.forEach(tag => {
+        if (!tagMap[tag]) tagMap[tag] = new Set();
+        tagMap[tag].add(idx+1);
+        });
+    });
+    pagesVocabTags.forEach((arr, idx) => {
+        arr.forEach(tag => {
+        const asVocab = 'vocab: ' + tag;
+        if (!tagMap[asVocab]) tagMap[asVocab] = new Set();
+        tagMap[asVocab].add(idx+1);
+        });
+    });
+
+    // Build tag array for export
+    const tagArr = Object.entries(tagMap).map(([string, pagesSet]) => ({
+        string,
+        pages: Array.from(pagesSet)
+    }));
+
+    // FINAL OBJECT
+    return {
+        filename: fname,
+        text: textArr,
+        Tags: tagArr
+    };
+    }
+
+
+    async function appendOutputToServer(newEntry) {
+        const resp = await fetch('/append_output', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newEntry)
+        });
+        const result = await resp.json();
+        if (!resp.ok || result.status !== 'success') {
+            alert('Failed to append output');
+        } else {
+            alert('Output appended!');
+        }
+    }
+
   // ==========================
   // == Core PDF Functions   ==
   // ==========================
@@ -214,6 +276,56 @@
     renderTags();
   }
 
+    async function exportNewTagsToServer() {
+        // 1. Gather all tags the user used (from all pages)
+        const allTopicTags = new Set();
+        pagesTopicTags.forEach(arr => arr.forEach(tag => allTopicTags.add(tag.trim())));
+
+        const allVocabTags = new Set();
+        pagesVocabTags.forEach(arr => arr.forEach(tag => allVocabTags.add(tag.trim())));
+
+        // 2. Fetch existing tags.json
+        let serverTags = [];
+        try {
+            const resp = await fetch('assets/tags.json');
+            if (resp.ok) {
+            serverTags = await resp.json();
+            }
+        } catch (e) { serverTags = []; }
+
+        const serverTagStrings = new Set(serverTags.map(t => t.string.trim().toLowerCase()));
+
+        // 3. Compute new tags (those not present)
+        const newTags = [];
+        for (let tag of allTopicTags) {
+            if (!serverTagStrings.has(tag.toLowerCase())) {
+            newTags.push({string: tag, category: "custom"});
+            }
+        }
+        for (let tag of allVocabTags) {
+            if (!serverTagStrings.has(tag.toLowerCase())) {
+            newTags.push({string: tag, category: "custom vocab"});
+            }
+        }
+
+        // 4. If any, POST them to Flask
+        if (newTags.length) {
+            const resp = await fetch('/append_tags', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(newTags)
+            });
+            const result = await resp.json();
+            if (result.status === 'success' && result.added && result.added.length > 0) {
+            alert(`Added new tags:\n${result.added.map(t => t.string + " (" + t.category + ")").join("\n")}`);
+            } else {
+            alert('No new tags were added.');
+            }
+        } else {
+            alert('No new tags found!');
+        }
+    }
+
   // ==============================
   // ====== Main Loop: Init =======
   // ==============================
@@ -263,6 +375,15 @@
         selectSuggestion(e.target.textContent, 'vocab');
       }
     });
+
+    // EXPORT BUTTONS
+    document.getElementById('exportOutput').addEventListener('click', () => {
+    const exportData = buildExportObject();
+    appendOutputToServer(exportData); // send to Flask
+    });
+
+    document.getElementById('exportTags').addEventListener('click', exportNewTagsToServer);
+
 
     // ---- Initial rendering (tags blank) ---
     renderTags();

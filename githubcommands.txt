@@ -1,5 +1,5 @@
 git add .
-git commit -m "XXX"
+git commit -m "xx"
 git branch -M main
 git push origin main
 
