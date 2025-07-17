@@ -1,119 +1,517 @@
 [
-  { "id": 1, "category": "predefined", "string": "Reading" },
-  { "id": 2, "category": "predefined", "string": "Writing" },
-  { "id": 3, "category": "predefined", "string": "Listening" },
-  { "id": 4, "category": "predefined", "string": "Speaking" },
-  { "id": 5, "category": "predefined", "string": "Grammar" },
-  { "id": 6, "category": "predefined", "string": "Vocabulary" },
-  { "id": 7, "category": "predefined", "string": "Conversation Practice" },
-  { "id": 8, "category": "predefined", "string": "Placement Test" },
-  { "id": 9, "category": "predefined", "string": "Pronunciation" },
-  { "id": 10, "category": "predefined", "string": "Spelling" },
-  { "id": 11, "category": "predefined", "string": "Presentation Skills" },
-  { "id": 12, "category": "predefined", "string": "Exam Preparation" },
-  { "id": 13, "category": "predefined", "string": "Business English" },
-  { "id": 14, "category": "predefined", "string": "Functional Language" },
-
-  { "id": 15, "category": "predefined", "string": "Present Simple" },
-  { "id": 16, "category": "predefined", "string": "Present Continuous" },
-  { "id": 17, "category": "predefined", "string": "Present Perfect" },
-  { "id": 18, "category": "predefined", "string": "Present Perfect Continuous" },
-  { "id": 19, "category": "predefined", "string": "Past Simple" },
-  { "id": 20, "category": "predefined", "string": "Past Continuous" },
-  { "id": 21, "category": "predefined", "string": "Past Perfect" },
-  { "id": 22, "category": "predefined", "string": "Past Perfect Continuous" },
-  { "id": 23, "category": "predefined", "string": "Future Simple" },
-  { "id": 24, "category": "predefined", "string": "Future Continuous" },
-  { "id": 25, "category": "predefined", "string": "Future Perfect" },
-  { "id": 26, "category": "predefined", "string": "Future Perfect Continuous" },
-  { "id": 27, "category": "predefined", "string": "Going to (Future)" },
-  { "id": 28, "category": "predefined", "string": "Future with Present Simple" },
-  { "id": 29, "category": "predefined", "string": "Future with Present Continuous" },
-
-  { "id": 30, "category": "predefined", "string": "Modal Verbs" },
-  { "id": 31, "category": "predefined", "string": "Can / Could" },
-  { "id": 32, "category": "predefined", "string": "May / Might" },
-  { "id": 33, "category": "predefined", "string": "Will / Would" },
-  { "id": 34, "category": "predefined", "string": "Shall / Should" },
-  { "id": 35, "category": "predefined", "string": "Must / Have to" },
-  { "id": 36, "category": "predefined", "string": "Ought to" },
-  { "id": 37, "category": "predefined", "string": "Need / Needn't" },
-  { "id": 38, "category": "predefined", "string": "Used to" },
-
-  { "id": 39, "category": "predefined", "string": "Zero Conditional" },
-  { "id": 40, "category": "predefined", "string": "First Conditional" },
-  { "id": 41, "category": "predefined", "string": "Second Conditional" },
-  { "id": 42, "category": "predefined", "string": "Third Conditional" },
-  { "id": 43, "category": "predefined", "string": "Mixed Conditionals" },
-
-  { "id": 44, "category": "predefined", "string": "Passive Voice" },
-  { "id": 45, "category": "predefined", "string": "Past Passive" },
-  { "id": 46, "category": "predefined", "string": "Future Passive" },
-  { "id": 47, "category": "predefined", "string": "Passive with Modals" },
-
-  { "id": 48, "category": "predefined", "string": "Reported Speech" },
-  { "id": 49, "category": "predefined", "string": "Reported Questions" },
-  { "id": 50, "category": "predefined", "string": "Reported Commands/Requests" },
-
-  { "id": 51, "category": "predefined", "string": "Yes/No Questions" },
-  { "id": 52, "category": "predefined", "string": "Wh- Questions" },
-  { "id": 53, "category": "predefined", "string": "Question Tags" },
-  { "id": 54, "category": "predefined", "string": "Negative Sentences" },
-
-  { "id": 55, "category": "predefined", "string": "Countable and Uncountable Nouns" },
-  { "id": 56, "category": "predefined", "string": "Plurals" },
-  { "id": 57, "category": "predefined", "string": "Possessive Nouns" },
-  { "id": 58, "category": "predefined", "string": "Collective Nouns" },
-  { "id": 59, "category": "predefined", "string": "Proper/Common Nouns" },
-
-  { "id": 60, "category": "predefined", "string": "Definite Article (the)" },
-  { "id": 61, "category": "predefined", "string": "Indefinite Article (a/an)" },
-  { "id": 62, "category": "predefined", "string": "Zero Article" },
-  { "id": 63, "category": "predefined", "string": "Demonstratives" },
-  { "id": 64, "category": "predefined", "string": "Quantifiers" },
-  { "id": 65, "category": "predefined", "string": "Possessives" },
-
-  { "id": 66, "category": "predefined", "string": "Adjective Order" },
-  { "id": 67, "category": "predefined", "string": "Comparatives" },
-  { "id": 68, "category": "predefined", "string": "Superlatives" },
-  { "id": 69, "category": "predefined", "string": "Adverbs of Frequency" },
-  { "id": 70, "category": "predefined", "string": "Adverbs of Manner" },
-  { "id": 71, "category": "predefined", "string": "Adverbs of Time/Place" },
-  { "id": 72, "category": "predefined", "string": "Intensifiers" },
-
-  { "id": 73, "category": "predefined", "string": "Subject Pronouns" },
-  { "id": 74, "category": "predefined", "string": "Object Pronouns" },
-  { "id": 75, "category": "predefined", "string": "Reflexive Pronouns" },
-  { "id": 76, "category": "predefined", "string": "Relative Pronouns" },
-  { "id": 77, "category": "predefined", "string": "Possessive Pronouns" },
-  { "id": 78, "category": "predefined", "string": "Indefinite Pronouns" },
-
-  { "id": 79, "category": "predefined", "string": "Prepositions of Time" },
-  { "id": 80, "category": "predefined", "string": "Prepositions of Place" },
-  { "id": 81, "category": "predefined", "string": "Prepositions of Movement" },
-  { "id": 82, "category": "predefined", "string": "Phrasal Verbs" },
-
-  { "id": 83, "category": "predefined", "string": "Relative Clauses" },
-  { "id": 84, "category": "predefined", "string": "Conditional Clauses" },
-  { "id": 85, "category": "predefined", "string": "Purpose Clauses" },
-  { "id": 86, "category": "predefined", "string": "Result Clauses" },
-  { "id": 87, "category": "predefined", "string": "Cause and Effect Clauses" },
-  { "id": 88, "category": "predefined", "string": "Gerunds & Infinitives" },
-  { "id": 89, "category": "predefined", "string": "Participles & Participle Clauses" },
-
-  { "id": 90, "category": "predefined", "string": "Direct vs Indirect Objects" },
-  { "id": 91, "category": "predefined", "string": "Subjunctive" },
-  { "id": 92, "category": "predefined", "string": "Inversion" },
-  { "id": 93, "category": "predefined", "string": "Ellipsis & Substitution" },
-  { "id": 94, "category": "predefined", "string": "Emphasis (Cleft Sentences)" },
-  { "id": 95, "category": "predefined", "string": "Collocations" },
-  { "id": 96, "category": "predefined", "string": "Fixed Expressions/Idioms" },
-
-  { "id": 97, "category": "predefined", "string": "Word Formation" },
-  { "id": 98, "category": "predefined", "string": "Register (Formal/Informal)" },
-  { "id": 99, "category": "predefined", "string": "Polite English" },
-  { "id": 100, "category": "predefined", "string": "Sentence Punctuation" },
-  { "id": 101, "category": "predefined", "string": "Conjunctions & Linking Words" },
-
-  { "id": 102, "category": "predefined", "string": "Conditional forms" }
+  {
+    "id": 1,
+    "category": "predefined",
+    "string": "Reading"
+  },
+  {
+    "id": 2,
+    "category": "predefined",
+    "string": "Writing"
+  },
+  {
+    "id": 3,
+    "category": "predefined",
+    "string": "Listening"
+  },
+  {
+    "id": 4,
+    "category": "predefined",
+    "string": "Speaking"
+  },
+  {
+    "id": 5,
+    "category": "predefined",
+    "string": "Grammar"
+  },
+  {
+    "id": 6,
+    "category": "predefined",
+    "string": "Vocabulary"
+  },
+  {
+    "id": 7,
+    "category": "predefined",
+    "string": "Conversation Practice"
+  },
+  {
+    "id": 8,
+    "category": "predefined",
+    "string": "Placement Test"
+  },
+  {
+    "id": 9,
+    "category": "predefined",
+    "string": "Pronunciation"
+  },
+  {
+    "id": 10,
+    "category": "predefined",
+    "string": "Spelling"
+  },
+  {
+    "id": 11,
+    "category": "predefined",
+    "string": "Presentation Skills"
+  },
+  {
+    "id": 12,
+    "category": "predefined",
+    "string": "Exam Preparation"
+  },
+  {
+    "id": 13,
+    "category": "predefined",
+    "string": "Business English"
+  },
+  {
+    "id": 14,
+    "category": "predefined",
+    "string": "Functional Language"
+  },
+  {
+    "id": 15,
+    "category": "predefined",
+    "string": "Present Simple"
+  },
+  {
+    "id": 16,
+    "category": "predefined",
+    "string": "Present Continuous"
+  },
+  {
+    "id": 17,
+    "category": "predefined",
+    "string": "Present Perfect"
+  },
+  {
+    "id": 18,
+    "category": "predefined",
+    "string": "Present Perfect Continuous"
+  },
+  {
+    "id": 19,
+    "category": "predefined",
+    "string": "Past Simple"
+  },
+  {
+    "id": 20,
+    "category": "predefined",
+    "string": "Past Continuous"
+  },
+  {
+    "id": 21,
+    "category": "predefined",
+    "string": "Past Perfect"
+  },
+  {
+    "id": 22,
+    "category": "predefined",
+    "string": "Past Perfect Continuous"
+  },
+  {
+    "id": 23,
+    "category": "predefined",
+    "string": "Future Simple"
+  },
+  {
+    "id": 24,
+    "category": "predefined",
+    "string": "Future Continuous"
+  },
+  {
+    "id": 25,
+    "category": "predefined",
+    "string": "Future Perfect"
+  },
+  {
+    "id": 26,
+    "category": "predefined",
+    "string": "Future Perfect Continuous"
+  },
+  {
+    "id": 27,
+    "category": "predefined",
+    "string": "Going to (Future)"
+  },
+  {
+    "id": 28,
+    "category": "predefined",
+    "string": "Future with Present Simple"
+  },
+  {
+    "id": 29,
+    "category": "predefined",
+    "string": "Future with Present Continuous"
+  },
+  {
+    "id": 30,
+    "category": "predefined",
+    "string": "Modal Verbs"
+  },
+  {
+    "id": 31,
+    "category": "predefined",
+    "string": "Can / Could"
+  },
+  {
+    "id": 32,
+    "category": "predefined",
+    "string": "May / Might"
+  },
+  {
+    "id": 33,
+    "category": "predefined",
+    "string": "Will / Would"
+  },
+  {
+    "id": 34,
+    "category": "predefined",
+    "string": "Shall / Should"
+  },
+  {
+    "id": 35,
+    "category": "predefined",
+    "string": "Must / Have to"
+  },
+  {
+    "id": 36,
+    "category": "predefined",
+    "string": "Ought to"
+  },
+  {
+    "id": 37,
+    "category": "predefined",
+    "string": "Need / Needn't"
+  },
+  {
+    "id": 38,
+    "category": "predefined",
+    "string": "Used to"
+  },
+  {
+    "id": 39,
+    "category": "predefined",
+    "string": "Zero Conditional"
+  },
+  {
+    "id": 40,
+    "category": "predefined",
+    "string": "First Conditional"
+  },
+  {
+    "id": 41,
+    "category": "predefined",
+    "string": "Second Conditional"
+  },
+  {
+    "id": 42,
+    "category": "predefined",
+    "string": "Third Conditional"
+  },
+  {
+    "id": 43,
+    "category": "predefined",
+    "string": "Mixed Conditionals"
+  },
+  {
+    "id": 44,
+    "category": "predefined",
+    "string": "Passive Voice"
+  },
+  {
+    "id": 45,
+    "category": "predefined",
+    "string": "Past Passive"
+  },
+  {
+    "id": 46,
+    "category": "predefined",
+    "string": "Future Passive"
+  },
+  {
+    "id": 47,
+    "category": "predefined",
+    "string": "Passive with Modals"
+  },
+  {
+    "id": 48,
+    "category": "predefined",
+    "string": "Reported Speech"
+  },
+  {
+    "id": 49,
+    "category": "predefined",
+    "string": "Reported Questions"
+  },
+  {
+    "id": 50,
+    "category": "predefined",
+    "string": "Reported Commands/Requests"
+  },
+  {
+    "id": 51,
+    "category": "predefined",
+    "string": "Yes/No Questions"
+  },
+  {
+    "id": 52,
+    "category": "predefined",
+    "string": "Wh- Questions"
+  },
+  {
+    "id": 53,
+    "category": "predefined",
+    "string": "Question Tags"
+  },
+  {
+    "id": 54,
+    "category": "predefined",
+    "string": "Negative Sentences"
+  },
+  {
+    "id": 55,
+    "category": "predefined",
+    "string": "Countable and Uncountable Nouns"
+  },
+  {
+    "id": 56,
+    "category": "predefined",
+    "string": "Plurals"
+  },
+  {
+    "id": 57,
+    "category": "predefined",
+    "string": "Possessive Nouns"
+  },
+  {
+    "id": 58,
+    "category": "predefined",
+    "string": "Collective Nouns"
+  },
+  {
+    "id": 59,
+    "category": "predefined",
+    "string": "Proper/Common Nouns"
+  },
+  {
+    "id": 60,
+    "category": "predefined",
+    "string": "Definite Article (the)"
+  },
+  {
+    "id": 61,
+    "category": "predefined",
+    "string": "Indefinite Article (a/an)"
+  },
+  {
+    "id": 62,
+    "category": "predefined",
+    "string": "Zero Article"
+  },
+  {
+    "id": 63,
+    "category": "predefined",
+    "string": "Demonstratives"
+  },
+  {
+    "id": 64,
+    "category": "predefined",
+    "string": "Quantifiers"
+  },
+  {
+    "id": 65,
+    "category": "predefined",
+    "string": "Possessives"
+  },
+  {
+    "id": 66,
+    "category": "predefined",
+    "string": "Adjective Order"
+  },
+  {
+    "id": 67,
+    "category": "predefined",
+    "string": "Comparatives"
+  },
+  {
+    "id": 68,
+    "category": "predefined",
+    "string": "Superlatives"
+  },
+  {
+    "id": 69,
+    "category": "predefined",
+    "string": "Adverbs of Frequency"
+  },
+  {
+    "id": 70,
+    "category": "predefined",
+    "string": "Adverbs of Manner"
+  },
+  {
+    "id": 71,
+    "category": "predefined",
+    "string": "Adverbs of Time/Place"
+  },
+  {
+    "id": 72,
+    "category": "predefined",
+    "string": "Intensifiers"
+  },
+  {
+    "id": 73,
+    "category": "predefined",
+    "string": "Subject Pronouns"
+  },
+  {
+    "id": 74,
+    "category": "predefined",
+    "string": "Object Pronouns"
+  },
+  {
+    "id": 75,
+    "category": "predefined",
+    "string": "Reflexive Pronouns"
+  },
+  {
+    "id": 76,
+    "category": "predefined",
+    "string": "Relative Pronouns"
+  },
+  {
+    "id": 77,
+    "category": "predefined",
+    "string": "Possessive Pronouns"
+  },
+  {
+    "id": 78,
+    "category": "predefined",
+    "string": "Indefinite Pronouns"
+  },
+  {
+    "id": 79,
+    "category": "predefined",
+    "string": "Prepositions of Time"
+  },
+  {
+    "id": 80,
+    "category": "predefined",
+    "string": "Prepositions of Place"
+  },
+  {
+    "id": 81,
+    "category": "predefined",
+    "string": "Prepositions of Movement"
+  },
+  {
+    "id": 82,
+    "category": "predefined",
+    "string": "Phrasal Verbs"
+  },
+  {
+    "id": 83,
+    "category": "predefined",
+    "string": "Relative Clauses"
+  },
+  {
+    "id": 84,
+    "category": "predefined",
+    "string": "Conditional Clauses"
+  },
+  {
+    "id": 85,
+    "category": "predefined",
+    "string": "Purpose Clauses"
+  },
+  {
+    "id": 86,
+    "category": "predefined",
+    "string": "Result Clauses"
+  },
+  {
+    "id": 87,
+    "category": "predefined",
+    "string": "Cause and Effect Clauses"
+  },
+  {
+    "id": 88,
+    "category": "predefined",
+    "string": "Gerunds & Infinitives"
+  },
+  {
+    "id": 89,
+    "category": "predefined",
+    "string": "Participles & Participle Clauses"
+  },
+  {
+    "id": 90,
+    "category": "predefined",
+    "string": "Direct vs Indirect Objects"
+  },
+  {
+    "id": 91,
+    "category": "predefined",
+    "string": "Subjunctive"
+  },
+  {
+    "id": 92,
+    "category": "predefined",
+    "string": "Inversion"
+  },
+  {
+    "id": 93,
+    "category": "predefined",
+    "string": "Ellipsis & Substitution"
+  },
+  {
+    "id": 94,
+    "category": "predefined",
+    "string": "Emphasis (Cleft Sentences)"
+  },
+  {
+    "id": 95,
+    "category": "predefined",
+    "string": "Collocations"
+  },
+  {
+    "id": 96,
+    "category": "predefined",
+    "string": "Fixed Expressions/Idioms"
+  },
+  {
+    "id": 97,
+    "category": "predefined",
+    "string": "Word Formation"
+  },
+  {
+    "id": 98,
+    "category": "predefined",
+    "string": "Register (Formal/Informal)"
+  },
+  {
+    "id": 99,
+    "category": "predefined",
+    "string": "Polite English"
+  },
+  {
+    "id": 100,
+    "category": "predefined",
+    "string": "Sentence Punctuation"
+  },
+  {
+    "id": 101,
+    "category": "predefined",
+    "string": "Conjunctions & Linking Words"
+  },
+  {
+    "id": 102,
+    "category": "predefined",
+    "string": "Conditional forms"
+  },
+  {
+    "id": 103,
+    "category": "predefined",
+    "string": "CPE"
+  }
 ]

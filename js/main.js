@@ -8,6 +8,8 @@
 
   let allTags = [];
   let allAliases = [];
+  let levelSelected = '';
+
 
     async function loadTagData() {
     const [tagsResp, aliasesResp] = await Promise.all([
@@ -66,7 +68,8 @@
     return {
         filename: fname,
         text: textArr,
-        Tags: tagArr
+        Tags: tagArr,
+        Level: levelSelected || ""
     };
     }
 
@@ -210,15 +213,18 @@
   // Display suggestions for the relevant input
   function showSuggestions(which) {
     const isTopic = which === 'topic';
-    const cat     = isTopic ? 'predefined' : 'vocab';
-    const input   = isTopic ? topicInput  : vocabInput;
+    const input   = isTopic ? topicInput : vocabInput;
     const list    = isTopic ? topicSuggest : vocabSuggest;
-    const matches = getSuggestions(input.value, cat);
+    const matches = getSuggestions(input.value, isTopic ? 'predefined' : 'vocab');
 
     list.innerHTML = '';
     matches.forEach(m => {
       const li = document.createElement('li');
       li.textContent = m;
+      li.addEventListener('mousedown', e => {
+        e.preventDefault(); // avoid blur race
+        selectSuggestion(m, which);
+      });
       list.appendChild(li);
     });
     list.style.display = matches.length ? 'block' : 'none';
@@ -347,6 +353,12 @@
     vocabInput    = document.getElementById('vocabInput');
     topicSuggest  = document.getElementById('topicSuggestions');
     vocabSuggest  = document.getElementById('vocabSuggestions');
+
+    levelSelect = document.getElementById('levelSelect');
+    levelSelected = levelSelect.value;
+    levelSelect.addEventListener('change', () => {
+      levelSelected = levelSelect.value;
+    });
 
     // --- Main PDF events ---
     goButton.addEventListener('click', loadPdf);

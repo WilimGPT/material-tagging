@@ -1,27 +1,41 @@
 [
   {
-    "filename": "Learn Past Perfect.pdf",
+    "filename": "168144 - Reading Part 1 - Exercise.pdf",
     "text": [
       {
         "page": 1,
-        "scrapedText": "GRAMMAR Past perfect  iSLCollective.com",
-        "OCR": "GRAMMAR\n% Pl pofel\n"
+        "scrapedText": "",
+        "OCR": "Student’s worksheet\nExercise 1\nIn order to find out what you have to do and what is being tested in Part 1 of the Reading paper, go\nthrough questions 1-5 in pairs.\n1. Look at the sample Reading and Use of English Paper Part 1. What do you have to do in this\npart? Have you checked the example?\n2. Look at the beginning of Part 1. What do you notice first?\n3. What do you notice about the text?\n4. Why are you given the title?\n5. How would you go about doing the task? Would read the text stopping after each gap to read\nthe options, or would you read the whole text first?\n"
+      },
+      {
+        "page": 2,
+        "scrapedText": "",
+        "OCR": "Exercise 2\nDo questions 6 — 8.\n6. Read only the text quickly and ask if there are any words which you do not understand.\n7. Summarise the text orally in pairs.\n8. Decide what type of vocabulary is being tested in each gap. Choose the type of vocabulary from the\ntypes in the box.\nv e |\nsemantic precision\nb teosssioms\nT B\nR T R\ne e |\n9. Answer questions 1-8. You have about 10 minutes. Look carefully at text before and after the gap as\nthis will help you choose the correct answer.\n10. Check your answers with the teacher. Be prepared to explain why you have chosen a particularword.\n"
       }
     ],
     "Tags": [
       {
-        "string": "example tag",
+        "string": "CPE",
         "pages": [
-          1
+          1,
+          2
         ]
       },
       {
-        "string": "present continuous",
+        "string": "Exam Preparation",
         "pages": [
-          1
+          1,
+          2
+        ]
+      },
+      {
+        "string": "Reading",
+        "pages": [
+          1,
+          2
         ]
       }
     ],
-    "Level": "A2"
+    "Level": "C2"
   }
 ]
