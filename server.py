@@ -5,7 +5,9 @@ import os
 app = Flask(__name__, static_url_path='', static_folder='.')
 
 OUTPUT_PATH = 'assets/output.json'
-TAGS_PATH = 'assets/tags.json'    # <-- Move here!
+TAGS_PATH = 'assets/tags.json'
+ALIASES_PATH = 'assets/aliases.json'
+
 
 @app.route('/')
 def index():
@@ -62,6 +64,42 @@ def append_tags():
     with open(TAGS_PATH, 'w', encoding='utf-8') as f:
         json.dump(tag_list, f, indent=2, ensure_ascii=False)
     return jsonify({"status": "success", "added": added})
+
+# ===  Save tags.json ===
+@app.route('/save_tags', methods=['POST'])
+def save_tags():
+    data = request.get_json(force=True)
+    if not isinstance(data, list):
+        return jsonify({'status': 'fail', 'reason': 'invalid data'}), 400
+    try:
+        with open(TAGS_PATH, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'fail', 'reason': str(e)}), 500
+
+# === New: Save aliases.json ===
+@app.route('/save_aliases', methods=['POST'])
+def save_aliases():
+    data = request.get_json(force=True)
+    if not isinstance(data, list):
+        return jsonify({'status': 'fail', 'reason': 'invalid data'}), 400
+    try:
+        # Strip out any extra fields (e.g., _editing)
+        cleaned = []
+        for item in data:
+            cleaned.append({
+                "alias": item.get("alias"),
+                "id": item.get("id")
+            })
+        with open(ALIASES_PATH, 'w', encoding='utf-8') as f:
+            json.dump(cleaned, f, indent=2, ensure_ascii=False)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'fail', 'reason': str(e)}), 500
+
+
+
 
 if __name__ == '__main__':
     app.run(port=8000, debug=True)

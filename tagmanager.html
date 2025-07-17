@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tag Manager</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 980px; margin: auto; padding: 24px; }
+    h1, h2 { margin-bottom: 8px; }
+    .section { margin-bottom: 32px; }
+    input[type="text"] { padding: 5px; font-size: 1em; width: 260px; margin-bottom: 8px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid #aaa; padding: 7px; text-align: left; }
+    th { background: #f0f0f0; }
+    button, select { font-size: 0.96em; margin-right: 3px; padding: 3px 10px; }
+    .actions button, .actions select { margin-right: 4px; }
+    .row-deleted { background: #ffeaea !important; color: #888; }
+    .row-updated { background: #eaffea !important; }
+    .row-alias { background: #eaf3ff !important; }
+    .success { color: #166d16; }
+    .error { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>Tag Manager</h1>
+
+  <div class="section">
+    <input id="customFilter" type="text" placeholder="Filter custom tags..." />
+    <span id="updateMsg"></span>
+    <table id="customTagsTable"></table>
+    <button id="saveAll">Save changes</button>
+  </div>
+
+  <div class="section">
+    <details>
+      <summary><b>Show Predefined &amp; Vocab Tags</b></summary>
+      <h2>Predefined Tags</h2>
+      <div id="predefTagsTable"></div>
+      <h2>Vocab Tags</h2>
+      <div id="vocabTagsTable"></div>
+    </details>
+  </div>
+
+  <script src="js/tagmanager.js"></script>
+</body>
+</html>
