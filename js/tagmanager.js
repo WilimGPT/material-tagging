@@ -1,16 +1,31 @@
 let tags = [], aliases = [];
 let lastId = 1;
 
+
+// Returns the next available custom tag ID, as a string "x1", "x2", etc.
+function getNextCustomId() {
+  // Look for tags whose ID is a string starting with 'x'
+  const customIds = tags
+    .filter(t => typeof t.id === 'string' && t.id.startsWith('x'))
+    .map(t => parseInt(t.id.slice(1), 10));
+  const maxCustom = customIds.length ? Math.max(...customIds) : 0;
+  return 'x' + (maxCustom + 1);
+}
+
+// Returns the next available integer tag ID for predefined/vocab
+function getNextIntegerId() {
+  const intIds = tags
+    .filter(t => typeof t.id === 'number')
+    .map(t => t.id);
+  const maxId = intIds.length ? Math.max(...intIds) : 0;
+  return maxId + 1;
+}
+
 const updateMsg = (msg, isError = false) => {
   const el = document.getElementById('updateMsg');
   el.innerHTML = msg ? (isError ? `<span class="error">${msg}</span>` : `<span class="success">${msg}</span>`) : '';
   setTimeout(() => { el.innerHTML = ''; }, 2200);
 };
-
-function getNextId() {
-  lastId = tags.reduce((max, t) => t.id > max ? t.id : max, 0);
-  return lastId + 1;
-}
 
 async function loadData() {
   tags = await fetch('assets/tags.json').then(r=>r.json());
@@ -28,7 +43,7 @@ function renderAll() {
 function renderCustomTagsTable() {
   const filter = document.getElementById('customFilter').value.trim().toLowerCase();
   const table = document.getElementById('customTagsTable');
-  const customTags = tags.filter(t => t.category === 'custom' && (!filter || t.string.toLowerCase().includes(filter)));
+  const customTags = tags.filter(t => (t.category === 'custom' || t.category === 'custom vocab') && (!filter || t.string.toLowerCase().includes(filter)));
 
   table.innerHTML = `
     <thead>
@@ -88,17 +103,18 @@ window.hideAllAliasDropdowns = function() {
 };
 
 window.convertCustomTag = function(id, category) {
-  const idx = tags.findIndex(t => t.id === id);
+  const idx = tags.findIndex(t => String(t.id) === String(id));
   if (idx === -1) return updateMsg('Tag not found.', true);
+
   tags[idx].category = category;
-  tags[idx].id = getNextId();
+  tags[idx].id = getNextIntegerId();   // <--- convert xN to next integer
   renderAll();
   updateMsg(`Tag "${tags[idx].string}" converted to ${category}.`);
 };
 
 window.addAliasAndRemove = function(id, targetId) {
   if (!targetId) return;
-  const idx = tags.findIndex(t => t.id === id);
+  const idx = tags.findIndex(t => String(t.id) === String(id));
   const aliasString = tags[idx].string;
   aliases.push({ alias: aliasString, id: Number(targetId) });
   tags.splice(idx, 1);
@@ -107,7 +123,7 @@ window.addAliasAndRemove = function(id, targetId) {
 };
 
 window.deleteCustomTag = function(id) {
-  const idx = tags.findIndex(t => t.id === id);
+  const idx = tags.findIndex(t => String(t.id) === String(id));
   const str = tags[idx].string;
   if (!confirm(`Delete custom tag "${str}"?`)) return;
   tags.splice(idx, 1);
@@ -116,22 +132,69 @@ window.deleteCustomTag = function(id) {
 };
 
 function renderCustomTagRow(tag) {
+  // Disable Predef if it's custom vocab; disable Vocab if it's custom
+  const disablePredef = tag.category === 'custom vocab' ? 'disabled' : '';
+  const disableVocab = tag.category === 'custom' ? 'disabled' : '';
+  // If tag is being edited, show input and save/cancel buttons
+  if (tag._editing) {
+    return `
+      <tr data-id="c${tag.id}">
+        <td>
+          <input id="editCustomInput_${tag.id}" type="text" value="${tag.string}" style="width:160px;">
+        </td>
+        <td class="actions">
+          <button onclick="saveCustomTagEdit('${tag.id}')">Save</button>
+          <button onclick="cancelCustomTagEdit('${tag.id}')">Cancel</button>
+        </td>
+      </tr>
+    `;
+  }
   return `
     <tr data-id="c${tag.id}">
       <td>${tag.string}</td>
       <td class="actions">
-        <button onclick="convertCustomTag(${tag.id}, 'predefined')">Predef</button>
-        <button onclick="convertCustomTag(${tag.id}, 'vocab')">Vocab</button>
-        <button onclick="showAliasDropdown(this, ${tag.id})">Alias ▼</button>
-        <button onclick="deleteCustomTag(${tag.id})" style="color:#a00;">Delete</button>
+        <button onclick="convertCustomTag('${tag.id}', 'predefined')" ${disablePredef}>Predef</button>
+        <button onclick="convertCustomTag('${tag.id}', 'vocab')" ${disableVocab}>Vocab</button>
+        <button onclick="showAliasDropdown(this, '${tag.id}')">Alias ▼</button>
+        <button onclick="editCustomTag('${tag.id}')">Edit</button>
+        <button onclick="deleteCustomTag('${tag.id}')" style="color:#a00;">Delete</button>
         <span class="aliasDropdown" style="display:none"></span>
       </td>
     </tr>
   `;
 }
 
-window.deleteTag = function(id) {
+
+window.editCustomTag = function(id) {
   const idx = tags.findIndex(t => t.id === id);
+  if (idx === -1) return updateMsg('Tag not found.', true);
+  tags[idx]._editing = true;
+  renderAll();
+  setTimeout(() => {
+    document.getElementById(`editCustomInput_${id}`).focus();
+  }, 0);
+};
+
+window.saveCustomTagEdit = function(id) {
+  const input = document.getElementById(`editCustomInput_${id}`);
+  const newVal = input.value.trim();
+  if (!newVal) return updateMsg('Tag cannot be empty.', true);
+  const idx = tags.findIndex(t => t.id === id);
+  tags[idx].string = newVal;
+  delete tags[idx]._editing;
+  renderAll();
+  updateMsg('Tag updated.');
+};
+
+window.cancelCustomTagEdit = function(id) {
+  const idx = tags.findIndex(t => t.id === id);
+  if (idx !== -1) delete tags[idx]._editing;
+  renderAll();
+};
+
+
+window.deleteTag = function(id) {
+  const idx = tags.findIndex(t => String(t.id) === String(id));
   if (idx === -1) return;
   const str = tags[idx].string;
   if (!confirm(`Delete tag "${str}" (${tags[idx].category})? This will break aliases pointing to it.`)) return;
@@ -143,7 +206,7 @@ window.deleteTag = function(id) {
 window.editTag = function(id) {
   const row = document.querySelector(`tr[data-id="t${id}"]`);
   if (!row) return;
-  const tag = tags.find(t => t.id === id);
+  const tag = tags.find(t => String(t.id) === String(id));
   const input = `<input id="editInput_${id}" type="text" value="${tag.string}" style="width:160px;">`;
   row.querySelector('.tagStringCell').innerHTML = input;
   row.querySelector('.actions').innerHTML = `
@@ -157,7 +220,7 @@ window.saveTagEdit = function(id) {
   const input = document.getElementById(`editInput_${id}`);
   const newVal = input.value.trim();
   if (!newVal) return updateMsg('Tag cannot be empty.', true);
-  const idx = tags.findIndex(t => t.id === id);
+  const idx = tags.findIndex(t => String(t.id) === String(id));
   tags[idx].string = newVal;
   renderAll();
   updateMsg('Tag updated.');

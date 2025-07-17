@@ -513,5 +513,75 @@
     "id": 103,
     "category": "predefined",
     "string": "CPE"
+  },
+  {
+    "id": 104,
+    "category": "predefined",
+    "string": "part 1"
+  },
+  {
+    "id": 105,
+    "category": "predefined",
+    "string": "sample paper"
+  },
+  {
+    "id": 106,
+    "category": "vocab",
+    "string": "Travel"
+  },
+  {
+    "id": 107,
+    "category": "vocab",
+    "string": "celebrations"
+  },
+  {
+    "id": 108,
+    "category": "vocab",
+    "string": "history"
+  },
+  {
+    "id": 109,
+    "category": "vocab",
+    "string": "describing people"
+  },
+  {
+    "id": 110,
+    "category": "vocab",
+    "string": "emotions"
+  },
+  {
+    "id": 111,
+    "category": "vocab",
+    "string": "empathy"
+  },
+  {
+    "id": 112,
+    "category": "vocab",
+    "string": "restaurant"
+  },
+  {
+    "id": 113,
+    "category": "vocab",
+    "string": "Entertainment"
+  },
+  {
+    "id": 114,
+    "category": "vocab",
+    "string": "dance"
+  },
+  {
+    "id": 115,
+    "category": "vocab",
+    "string": "Customs & Traditions"
+  },
+  {
+    "id": 116,
+    "category": "predefined",
+    "string": "Lesson Plan"
+  },
+  {
+    "id": 117,
+    "category": "predefined",
+    "string": "Answer Key"
   }
 ]
