@@ -583,5 +583,25 @@
     "id": 117,
     "category": "predefined",
     "string": "Answer Key"
+  },
+  {
+    "id": "x0",
+    "category": "custom",
+    "string": "part 2"
+  },
+  {
+    "id": "x1",
+    "category": "custom vocab",
+    "string": "email"
+  },
+  {
+    "id": "x4",
+    "category": "custom",
+    "string": "123"
+  },
+  {
+    "id": "x5",
+    "category": "custom vocab",
+    "string": "456"
   }
 ]

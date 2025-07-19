@@ -2,6 +2,15 @@ let tags = [], aliases = [];
 let lastId = 1;
 
 
+// Checks if another tag with the same string and category exists (excluding a tag by id)
+function tagExists(string, category, excludeId = null) {
+  return tags.some(t =>
+    t.string.trim().toLowerCase() === string.trim().toLowerCase() &&
+    t.category === category &&
+    (excludeId === null || String(t.id) !== String(excludeId))
+  );
+}
+
 // Returns the next available custom tag ID, as a string "x1", "x2", etc.
 function getNextCustomId() {
   // Look for tags whose ID is a string starting with 'x'
@@ -66,11 +75,11 @@ window.showAliasDropdown = function(btn, id) {
   const dropdownCell = row.querySelector('.aliasDropdown');
   dropdownCell.style.display = 'inline';
   dropdownCell.innerHTML = `
-    <input type="text" id="aliasFilterInput_${id}" placeholder="Type to filter…" style="width:170px;" autocomplete="off" oninput="updateAliasDropdownOptions(${id})">
+    <input type="text" id="aliasFilterInput_${id}" placeholder="Type to filter…" style="width:170px;" autocomplete="off" oninput="updateAliasDropdownOptions('${id}')">
     <select id="aliasSelect_${id}" size="7" style="width:220px;margin-left:3px;margin-right:6px;"></select>
-    <button onclick="onAliasSelect(${id})">Add</button>
+    <button onclick="onAliasSelect('${id}')">Add</button>
     <button onclick="hideAllAliasDropdowns()">Cancel</button>
-  `;
+    `;
   updateAliasDropdownOptions(id);
   setTimeout(() => {
     document.getElementById(`aliasFilterInput_${id}`).focus();
@@ -106,17 +115,22 @@ window.convertCustomTag = function(id, category) {
   const idx = tags.findIndex(t => String(t.id) === String(id));
   if (idx === -1) return updateMsg('Tag not found.', true);
 
+  const string = tags[idx].string;
+  // Check for duplicate in the target category
+  if (tagExists(string, category)) {
+    return updateMsg(`Tag "${string}" already exists in "${category}"`, true);
+  }
   tags[idx].category = category;
   tags[idx].id = getNextIntegerId();   // <--- convert xN to next integer
   renderAll();
-  updateMsg(`Tag "${tags[idx].string}" converted to ${category}.`);
+  updateMsg(`Tag "${string}" converted to ${category}.`);
 };
 
 window.addAliasAndRemove = function(id, targetId) {
   if (!targetId) return;
   const idx = tags.findIndex(t => String(t.id) === String(id));
   const aliasString = tags[idx].string;
-  aliases.push({ alias: aliasString, id: Number(targetId) });
+  aliases.push({ alias: aliasString, id: targetId });
   tags.splice(idx, 1);
   renderAll();
   updateMsg(`"${aliasString}" added as alias.`);
@@ -178,8 +192,10 @@ window.editCustomTag = function(id) {
 window.saveCustomTagEdit = function(id) {
   const input = document.getElementById(`editCustomInput_${id}`);
   const newVal = input.value.trim();
-  if (!newVal) return updateMsg('Tag cannot be empty.', true);
   const idx = tags.findIndex(t => t.id === id);
+  const cat = tags[idx].category;
+  if (!newVal) return updateMsg('Tag cannot be empty.', true);
+  if (tagExists(newVal, cat, id)) return updateMsg('Duplicate tag in this category.', true);
   tags[idx].string = newVal;
   delete tags[idx]._editing;
   renderAll();
@@ -219,8 +235,10 @@ window.editTag = function(id) {
 window.saveTagEdit = function(id) {
   const input = document.getElementById(`editInput_${id}`);
   const newVal = input.value.trim();
-  if (!newVal) return updateMsg('Tag cannot be empty.', true);
   const idx = tags.findIndex(t => String(t.id) === String(id));
+  const cat = tags[idx].category;
+  if (!newVal) return updateMsg('Tag cannot be empty.', true);
+  if (tagExists(newVal, cat, id)) return updateMsg('Duplicate tag in this category.', true);
   tags[idx].string = newVal;
   renderAll();
   updateMsg('Tag updated.');
@@ -368,33 +386,39 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('customFilter').addEventListener('input', renderCustomTagsTable);
   document.getElementById('saveAll').addEventListener('click', async () => {
     try {
-      const [resTags, resAliases] = await Promise.all([
+        const [resTags, resAliases] = await Promise.all([
         fetch('/save_tags', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(tags)
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(tags)
         }),
         fetch('/save_aliases', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(aliases)
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(aliases)
         })
-      ]);
-      // Only read the responses ONCE each!
-      const resTagsJson = await resTags.json();
-      const resAliasesJson = await resAliases.json();
+        ]);
+        const resTagsJson = await resTags.json();
+        const resAliasesJson = await resAliases.json();
 
-      const ok1 = resTags.ok && resTagsJson.status === 'success';
-      const ok2 = resAliases.ok && resAliasesJson.status === 'success';
-      if (ok1 && ok2) {
-        updateMsg('Saved successfully!');
-      } else {
+        const ok1 = resTags.ok && resTagsJson.status === 'success';
+        const ok2 = resAliases.ok && resAliasesJson.status === 'success';
+
+        if (ok1 && ok2) {
+        // Added: Show how many tags in output were updated by alias change
+        if (resAliasesJson.updated_tags && resAliasesJson.updated_tags > 0) {
+            updateMsg(`Saved successfully! ${resAliasesJson.updated_tags} tags updated in output.`);
+        } else {
+            updateMsg('Saved successfully!');
+        }
+        } else {
         updateMsg('Failed to save changes.', true);
-      }
+        }
     } catch (e) {
-      updateMsg('Failed to save changes.', true);
+        updateMsg('Failed to save changes.', true);
     }
-  });
+    });
+
 });
 
 

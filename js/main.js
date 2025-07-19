@@ -9,6 +9,8 @@
   let allTags = [];
   let allAliases = [];
   let levelSelected = '';
+  let topicSelectedIdx = -1, vocabSelectedIdx = -1;
+
 
 
     async function loadTagData() {
@@ -19,6 +21,20 @@
     allTags = await tagsResp.json();
     allAliases = await aliasesResp.json();
     }
+
+    // Resolves a tag string: replaces alias with canonical tag if found
+      function resolveTagString(tagStr) {
+        const normalized = tagStr.trim().toLowerCase();
+        // 1. Look for alias match (case-insensitive)
+        const aliasObj = allAliases.find(a => a.alias.trim().toLowerCase() === normalized);
+        if (aliasObj) {
+          // 2. Find the canonical tag
+          const canonicalTag = allTags.find(t => t.id == aliasObj.id);
+          if (canonicalTag) return canonicalTag.string;
+        }
+        // 3. Not found? Return as is
+        return tagStr;
+      }
 
   // DOM element handles
   let fileInput, goButton, prevButton, nextButton, copyBtn;
@@ -58,11 +74,17 @@
         });
     });
 
-    // Build tag array for export
-    const tagArr = Object.entries(tagMap).map(([string, pagesSet]) => ({
+    // Map to canonical, then group pages by canonical string
+      const canonTagMap = {};
+      Object.entries(tagMap).forEach(([string, pagesSet]) => {
+        const canonical = resolveTagString(string);
+        if (!canonTagMap[canonical]) canonTagMap[canonical] = new Set();
+        pagesSet.forEach(page => canonTagMap[canonical].add(page));
+      });
+      const tagArr = Object.entries(canonTagMap).map(([string, pagesSet]) => ({
         string,
         pages: Array.from(pagesSet)
-    }));
+      }));
 
     // FINAL OBJECT
     return {
@@ -194,41 +216,60 @@
   }
 
   // Suggestion helper
-  function getSuggestions(value, category) {
+ function getSuggestions(value, which) {
+    // which: 'topic' or 'vocab'
     const q = value.trim().toLowerCase();
     if (!q) return [];
-    const tagMatches = allTags
-        .filter(t => t.category === category && t.string.toLowerCase().startsWith(q))
-        .map(t => t.string);
-    const aliasMatches = allAliases
-        .filter(a => a.alias.toLowerCase().startsWith(q))
-        .map(a => {
-        const tagObj = allTags.find(t => t.id == a.id);
-        return tagObj ? tagObj.string : null;
-        })
-        .filter(Boolean);
-    return Array.from(new Set([...tagMatches, ...aliasMatches])).slice(0, 10);
+    let allowedCats, targetCat;
+    if (which === 'topic') {
+      allowedCats = ['predefined', 'custom'];
+      targetCat = 'predefined';
+    } else {
+      allowedCats = ['vocab', 'custom vocab'];
+      targetCat = 'vocab';
     }
+    // Main tag matches
+    const tagMatches = allTags
+      .filter(t => allowedCats.includes(t.category) && t.string.toLowerCase().startsWith(q))
+      .map(t => t.string);
+    // Aliases, but only if their canonical tag is the right type
+    const aliasMatches = allAliases
+      .map(a => {
+        const tagObj = allTags.find(t => String(t.id) === String(a.id));
+        if (!tagObj) return null;
+        if (tagObj.category !== targetCat) return null;
+        if (!a.alias.toLowerCase().startsWith(q)) return null;
+        return tagObj.string;
+      })
+      .filter(Boolean);
+    // Deduplicate
+    return Array.from(new Set([...tagMatches, ...aliasMatches])).slice(0, 10);
+  }
 
   // Display suggestions for the relevant input
   function showSuggestions(which) {
     const isTopic = which === 'topic';
     const input   = isTopic ? topicInput : vocabInput;
     const list    = isTopic ? topicSuggest : vocabSuggest;
-    const matches = getSuggestions(input.value, isTopic ? 'predefined' : 'vocab');
+    const matches = getSuggestions(input.value, which);
+    const selectedIdx = isTopic ? topicSelectedIdx : vocabSelectedIdx;
 
     list.innerHTML = '';
-    matches.forEach(m => {
+    matches.forEach((m, i) => {
       const li = document.createElement('li');
       li.textContent = m;
+      if (i === selectedIdx) li.classList.add('selected');
       li.addEventListener('mousedown', e => {
-        e.preventDefault(); // avoid blur race
+        e.preventDefault();
         selectSuggestion(m, which);
+        if (isTopic) topicSelectedIdx = -1;
+        else vocabSelectedIdx = -1;
       });
       list.appendChild(li);
     });
     list.style.display = matches.length ? 'block' : 'none';
   }
+
 
   // Add a tag to the appropriate page's array and update tags UI
   function selectSuggestion(text, which) {
@@ -251,26 +292,68 @@
 
   // Respond to ENTER in topic field
   function onTopicKeydown(e) {
-    if (e.key === 'Enter') {
+    const matches = getSuggestions(topicInput.value, 'topic');
+    if (e.key === 'ArrowDown') {
+      if (matches.length) {
+        topicSelectedIdx = Math.min(matches.length - 1, topicSelectedIdx + 1);
+        showSuggestions('topic');
+        e.preventDefault();
+      }
+    } else if (e.key === 'ArrowUp') {
+      if (matches.length) {
+        topicSelectedIdx = Math.max(-1, topicSelectedIdx - 1);
+        showSuggestions('topic');
+        e.preventDefault();
+      }
+    } else if (e.key === 'Enter') {
       e.preventDefault();
-      const val = topicInput.value.trim();
-      if (!val) return;
-      // Use first suggestion if exists, else plain value
-      const suggestion = getSuggestions(val, 'predefined')[0] || val;
-      selectSuggestion(suggestion, 'topic');
+      if (topicSelectedIdx >= 0 && matches[topicSelectedIdx]) {
+        selectSuggestion(matches[topicSelectedIdx], 'topic');
+        topicSelectedIdx = -1;
+      } else {
+        const val = topicInput.value.trim();
+        if (!val) return;
+        selectSuggestion(val, 'topic');
+        topicSelectedIdx = -1;
+      }
+    } else {
+      topicSelectedIdx = -1;
+      setTimeout(() => showSuggestions('topic'), 0);
     }
   }
 
-  // Respond to ENTER in vocab field
+// Respond to ENTER in vocab field
   function onVocabKeydown(e) {
-    if (e.key === 'Enter') {
+    const matches = getSuggestions(vocabInput.value, 'vocab');
+    if (e.key === 'ArrowDown') {
+      if (matches.length) {
+        vocabSelectedIdx = Math.min(matches.length - 1, vocabSelectedIdx + 1);
+        showSuggestions('vocab');
+        e.preventDefault();
+      }
+    } else if (e.key === 'ArrowUp') {
+      if (matches.length) {
+        vocabSelectedIdx = Math.max(-1, vocabSelectedIdx - 1);
+        showSuggestions('vocab');
+        e.preventDefault();
+      }
+    } else if (e.key === 'Enter') {
       e.preventDefault();
-      const val = vocabInput.value.trim();
-      if (!val) return;
-      const suggestion = getSuggestions(val, 'vocab')[0] || val;
-      selectSuggestion(suggestion, 'vocab');
+      if (vocabSelectedIdx >= 0 && matches[vocabSelectedIdx]) {
+        selectSuggestion(matches[vocabSelectedIdx], 'vocab');
+        vocabSelectedIdx = -1;
+      } else {
+        const val = vocabInput.value.trim();
+        if (!val) return;
+        selectSuggestion(val, 'vocab');
+        vocabSelectedIdx = -1;
+      }
+    } else {
+      vocabSelectedIdx = -1;
+      setTimeout(() => showSuggestions('vocab'), 0);
     }
   }
+
 
   // Copy tags from current page to all pages
   function copyToAll() {
@@ -375,6 +458,20 @@
     // Hide suggestions when input loses focus (with delay for click)
     topicInput.addEventListener('blur', () => setTimeout(() => topicSuggest.style.display = 'none', 120));
     vocabInput.addEventListener('blur', () => setTimeout(() => vocabSuggest.style.display = 'none', 120));
+
+
+    topicInput.addEventListener('blur', () => {
+      setTimeout(() => {
+        topicSuggest.style.display = 'none';
+        topicSelectedIdx = -1;
+      }, 120);
+    });
+    vocabInput.addEventListener('blur', () => {
+      setTimeout(() => {
+        vocabSuggest.style.display = 'none';
+        vocabSelectedIdx = -1;
+      }, 120);
+    });
 
     // Suggestion list: click to select
     topicSuggest.addEventListener('click', e => {
